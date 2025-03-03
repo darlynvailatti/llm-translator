@@ -1,0 +1,27 @@
+[project]
+name = "llm-translator"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django (>=5.1.6,<6.0.0)",
+    "django-admin (>=2.0.2,<3.0.0)",
+    "djangorestframework (>=3.15.2,<4.0.0)",
+    "django-jsonfield-backport (>=1.0.5,<2.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "pydantic (>=2.10.6,<3.0.0)",
+    "requests (>=2.32.3,<3.0.0)",
+    "python-dotenv (>=1.0.0,<2.0.0)",
+    "django-json-widget (>=2.0.1,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "llm_translator", from = "llm_translator"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

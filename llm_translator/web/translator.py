@@ -95,8 +95,11 @@ class TranslatorService:
     def __call_llm(self):
 
         llm_providers = {
+            # "ollama": OllamaLocalAPIProvider(),
             "together": TogetherAIProvider()
         }
+        
+
 
         for p, implementation in llm_providers.items():
             try:

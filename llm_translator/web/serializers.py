@@ -29,7 +29,12 @@ class TranslationEndpointDetailSerializer(TranslationEndpointAnalyticsSerializer
         model = TranslationEndpoint
         exclude = ['owner']
     
-class TranslationSpecSerializer(serializers.ModelSerializer):
+class TranslationSpecListSerializer(serializers.ModelSerializer):
     class Meta:
         model = TranslationSpec
-        fields = '__all__'
+        exclude = ["definition"]
+
+class TranslationSpecDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TranslationSpec
+        exclude = ['endpoint']

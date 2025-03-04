@@ -17,6 +17,7 @@ class TranslationContext:
 class TranslatedContext:
     content_type: str
     body: bytes
+    provider: str
 
 
 class TranslatorService:
@@ -71,11 +72,24 @@ class TranslatorService:
         )
 
         self.logger.info(f"Prompting LLMs with: {self.prompt}")
-        translated_content = self.__call_llm()
+        translated = self.__call_llm()
+
+        body = ""
+        provider = None
+        message = None
+
+        if not translated or not translated["content"]:
+            message = "No LLM provider was able to translate the content"
+            self.logger.error(message)
+            raise TranslationException(message)
+        else:
+            body = translated["content"]
+            provider = translated["provider"]
 
         return TranslatedContext(
             content_type=self.context.content_type,
-            body=translated_content,
+            body=body,
+            provider=provider,
         )
 
     def __call_llm(self):
@@ -87,7 +101,7 @@ class TranslatorService:
         for p, implementation in llm_providers.items():
             try:
                 self.logger.info(f"Calling `{p}` LLM")
-                return implementation.call(self.prompt)
+                return { "content": implementation.call(self.prompt), "provider": p }
             except Exception as e:
                 self.logger.error(f"Error calling `{p}` LLM: {e}")
                 continue

@@ -1,4 +1,3 @@
-
 import logging
 import uuid
 from datetime import datetime
@@ -33,6 +32,7 @@ class TranslationManager:
         time_taken = 0
         status = TranslationEventStatus.SUCCESS
         endpoint = self.__find_endpoint(request.endpoint_id)
+        translated = None
 
         if not endpoint:
             msg = f"Endpoint {request.endpoint_id} not found"
@@ -63,6 +63,7 @@ class TranslationManager:
                 message="Success",
             )
         except Exception as e:
+            time_taken = (datetime.now() - start_at).total_seconds()
             msg = f"Error handling translation request: {e}"
             self.logger.error(msg)
             status = TranslationEventStatus.FAILURE
@@ -75,8 +76,24 @@ class TranslationManager:
             )
         finally:
             self.logger.info(f"Request handled in {time_taken} seconds")
+
+            ctx = {
+                "duration": time_taken,
+                "request": {
+                    "content_type": request.content_type,
+                    "body": request.body,
+                }
+            }
+
+            if translated:
+                ctx.update({"translated": {
+                    "content_type": translated.content_type,
+                    "body": translated.body,
+                    "provider": translated.provider
+                }})
+
             TranslationEvent.objects.create(
-                status=status, context={"duration": time_taken}, endpoint=endpoint
+                status=status, context=ctx, endpoint=endpoint
             )
             return response
 
@@ -89,4 +106,3 @@ class TranslationManager:
                 return TranslationEndpoint.objects.get(key=endpoint_id)
             except TranslationEndpoint.DoesNotExist:
                 return None
-

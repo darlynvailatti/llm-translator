@@ -40,7 +40,7 @@ class Command(BaseCommand):
                 - Output field names must follow snake_case
 
                 [OUTPUT FORMAT]
-                - Must return a JSON indented string
+                - Must return a raw JSON payload without breaklines or indentation
 
                 """,
             ).model_dump(),

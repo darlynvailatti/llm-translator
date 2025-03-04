@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Custom apps
     "rest_framework",
+    "rest_framework.authtoken",
     "web",
     "django_json_widget",
 ]
@@ -142,6 +143,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "web.auth.CustomTokenAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],

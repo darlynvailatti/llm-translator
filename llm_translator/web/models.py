@@ -38,6 +38,14 @@ class TranslationEndpoint(BaseModel):
     def __str__(self):
         return self.name
     
+    @property
+    def total_success(self):
+        return TranslationEvent.objects.filter(endpoint=self, status=TranslationEventStatus.SUCCESS).count()
+    
+    @property
+    def total_failure(self):
+        return TranslationEvent.objects.filter(endpoint=self, status=TranslationEventStatus.FAILURE).count()
+    
 class TranslationSpec(BaseModel):
     is_active = models.BooleanField(default=True)
     name = models.CharField(max_length=256)

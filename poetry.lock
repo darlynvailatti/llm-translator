@@ -182,6 +182,22 @@ django-excel-response2 = ">=3.0.0"
 django-six = "*"
 
 [[package]]
+name = "django-cors-headers"
+version = "4.7.0"
+description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "django_cors_headers-4.7.0-py3-none-any.whl", hash = "sha256:f1c125dcd58479fe7a67fe2499c16ee38b81b397463cf025f0e2c42937421070"},
+    {file = "django_cors_headers-4.7.0.tar.gz", hash = "sha256:6fdf31bf9c6d6448ba09ef57157db2268d515d94fc5c89a0a1028e1fc03ee52b"},
+]
+
+[package.dependencies]
+asgiref = ">=3.6"
+django = ">=4.2"
+
+[[package]]
 name = "django-excel-response2"
 version = "3.0.6"
 description = "A function extends of Tarken's django-excel-response"
@@ -691,4 +707,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "cfa4cd3140cc44047b297fa9eb5bdb0cce4f2d7b2a556741924511790631869e"
+content-hash = "eb95f53aa7a97c22d637aa393c0bf4c442dadf818b552278fa843dee88da0855"

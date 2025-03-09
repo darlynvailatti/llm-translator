@@ -47,7 +47,7 @@ class TranslationEndpoint(BaseModel):
         return TranslationEvent.objects.filter(endpoint=self, status=TranslationEventStatus.FAILURE).count()
     
 class TranslationSpec(BaseModel):
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     name = models.CharField(max_length=256)
     endpoint = models.ForeignKey(TranslationEndpoint, on_delete=models.CASCADE)
     definition = JSONField()

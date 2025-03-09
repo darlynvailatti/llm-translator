@@ -1,24 +1,29 @@
-
 from rest_framework import serializers
-from .models import TranslationEndpoint, TranslationSpec, TranslationEvent, TranslationEventStatus
+from .models import (
+    TranslationEndpoint,
+    TranslationSpec,
+    TranslationEvent,
+    TranslationEventStatus,
+)
+from .schemas import TranslationSpecDefinitionSchema
 
 
 class TranslationEndpointAnalyticsSerializer(serializers.ModelSerializer):
-    
+
     total_success = serializers.SerializerMethodField()
     total_failure = serializers.SerializerMethodField()
     traffic = serializers.SerializerMethodField()
 
     class Meta:
         model = TranslationEndpoint
-        fields = ['total_success', 'total_failure']
+        fields = ["total_success", "total_failure"]
 
     def get_total_success(self, obj) -> int:
         return obj.total_success
 
     def get_total_failure(self, obj) -> int:
         return obj.total_failure
-    
+
     def get_traffic(self, obj) -> dict:
 
         # Group events by minute
@@ -46,23 +51,36 @@ class TranslationEndpointAnalyticsSerializer(serializers.ModelSerializer):
 
         return traffic
 
+
 class TranslationEndpointListSerializer(TranslationEndpointAnalyticsSerializer):
 
     class Meta:
         model = TranslationEndpoint
-        exclude = ['definition']
-    
+        exclude = ["definition"]
+
+
 class TranslationEndpointDetailSerializer(TranslationEndpointAnalyticsSerializer):
     class Meta:
         model = TranslationEndpoint
-        exclude = ['owner']
-    
+        exclude = ["owner"]
+
+
 class TranslationSpecListSerializer(serializers.ModelSerializer):
     class Meta:
         model = TranslationSpec
         exclude = ["definition"]
 
+
 class TranslationSpecDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = TranslationSpec
-        exclude = ['endpoint']
+        exclude = ["endpoint"]
+
+    # Override to internal method fill default definition
+    def to_internal_value(self, data):
+        if not data["uuid"]:
+            data = data.copy()
+            data["definition"] = {}
+        
+        return super().to_internal_value(data)
+        

@@ -10,6 +10,6 @@ class OutputSpecRule(BaseModel):
     schema_: Optional[str] = None
 
 class TranslationSpecDefinitionSchema(BaseModel):
-    input_rule: InputSpecRule
-    output_rule: OutputSpecRule 
-    extra_context: str
+    input_rule: Optional[InputSpecRule]
+    output_rule: Optional[OutputSpecRule]
+    extra_context: Optional[str]

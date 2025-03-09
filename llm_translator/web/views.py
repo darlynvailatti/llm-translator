@@ -64,8 +64,9 @@ class TranslationEndpointViewSet(viewsets.ModelViewSet):
         )
         account = self.__get_account_for_user(request)
 
-        TranslationEndpoint.objects.create(owner=account, **request.data)
-        return Response({"success": "Endpoint created"}, status=201)
+        endpoint = TranslationEndpoint.objects.create(owner=account, **request.data)
+        created = TranslationEndpointDetailSerializer(endpoint).data
+        return Response(created, status=201)
 
     def __get_account_for_user(self, request):
         account = Account.objects.filter(user=request.user, is_active=True).first()
@@ -85,15 +86,19 @@ class TranslationSpecViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         endpoint_id = self.kwargs["endpoint_id"]
         return TranslationSpec.objects.filter(endpoint_id=endpoint_id)
-    
+
     def get_serializer_class(self):
         if self.action == "list":
             return TranslationSpecListSerializer
         return TranslationSpecDetailSerializer
 
-
     def create(self, request, *args, **kwargs):
-        TranslationSpecDetailSerializer(data=request.data).is_valid(raise_exception=True)
-        endpoint = get_object_or_404(TranslationEndpoint, id=self.kwargs["endpoint_id"])
-        TranslationSpec.objects.create(endpoint=endpoint, **request.data)
-        return Response({"success": "Spec created"}, status=201)
+        TranslationSpecDetailSerializer(data=request.data).is_valid(
+            raise_exception=True
+        )
+        endpoint = get_object_or_404(
+            TranslationEndpoint, uuid=self.kwargs["endpoint_id"]
+        )
+
+        created = TranslationSpec.objects.create(endpoint=endpoint, **request.data)
+        return Response(TranslationSpecDetailSerializer(created).data, status=201)

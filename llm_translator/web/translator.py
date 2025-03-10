@@ -23,6 +23,7 @@ class TranslatedContext:
 class TranslatorService:
 
     logger = logging.getLogger(f"llm_translator.{__name__}")
+    INVALID_INPUT = "INVALID_INPUT"
 
     def __init__(self, context: TranslationContext):
         self.context = context
@@ -61,10 +62,13 @@ class TranslatorService:
 
             Your task is to convert this data to {self.spec_definition.output_rule.content_type}.
             You must return only the data, not the schema and not any other instructions.
+            If the input data is not a valid {self.spec_definition.input_rule.content_type}, you must return "INVALID_INPUT".
             
             You must also adhere to the following extra instructions:
             [EXTRA INSTRUCTIONS]
             {self.spec_definition.extra_context}
+
+
         """
 
         self.logger.info(
@@ -85,6 +89,12 @@ class TranslatorService:
         else:
             body = translated["content"]
             provider = translated["provider"]
+
+        self.logger.info(f"Translation body `{body}`")
+        if self.INVALID_INPUT in body:
+            message = f"The provided input is not a valid `{self.spec_definition.input_rule.content_type}` content"
+            self.logger.error(message)
+            raise TranslationException(message)
 
         return TranslatedContext(
             content_type=self.context.content_type,

@@ -20,7 +20,7 @@ class Account(BaseModel):
         return self.name
     
 class AccountAPIKey(BaseModel):
-    key = models.CharField(max_length=128, default=uuid.uuid4)
+    key = models.CharField(max_length=128, default=uuid.uuid4, unique=True)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
     

@@ -9,6 +9,7 @@ from .serializers import (
     TranslationEndpointDetailSerializer,
     TranslationSpecListSerializer,
     TranslationSpecDetailSerializer,
+    AccountSerializer,
 )
 from .manager import TranslationManager, TranslationRequest
 
@@ -39,6 +40,19 @@ def api_translate(request, endpoint_id):
         },
         status=status,
     )
+
+
+@api_view(["GET"])
+def get_account_by_endpoint(request, endpoint_id):
+    print(endpoint_id)
+    account = TranslationEndpoint.objects.filter(uuid=endpoint_id).first()
+
+    if not account:
+        return Response(
+            {"error": "No active Account has been found for the given endpoint"}, status=400
+        )
+    data = AccountSerializer(account.owner).data
+    return Response(data, status=200)
 
 
 class TranslationEndpointViewSet(viewsets.ModelViewSet):

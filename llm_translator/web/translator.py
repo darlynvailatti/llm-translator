@@ -61,7 +61,7 @@ class TranslatorService:
             {self.context.body}
 
             Your task is to convert this data to {self.spec_definition.output_rule.content_type}.
-            You must return only the data, not the schema and not any other instructions.
+            You must return ONLY the raw data, not the schema, AND not any other instructions, information or formatting.
             If the input data is not a valid {self.spec_definition.input_rule.content_type}, you must return "INVALID_INPUT".
             
             You must also adhere to the following extra instructions:

@@ -3,7 +3,7 @@ from .models import (
     TranslationEndpoint,
     TranslationSpec,
     TranslationEvent,
-    TranslationEventStatus,
+    AccountAPIKey
 )
 from .schemas import TranslationSpecDefinitionSchema
 
@@ -78,9 +78,20 @@ class TranslationSpecDetailSerializer(serializers.ModelSerializer):
 
     # Override to internal method fill default definition
     def to_internal_value(self, data):
-        if not data["uuid"]:
+        if not data.get("uuid"):
             data = data.copy()
             data["definition"] = {}
         
         return super().to_internal_value(data)
-        
+    
+class AccountSerializer(serializers.Serializer):
+
+    name = serializers.CharField(max_length=256)
+    is_active = serializers.BooleanField(default=True)
+    api_keys = serializers.SerializerMethodField()
+
+    def get_api_keys(self, obj) -> list:
+        api_keys = AccountAPIKey.objects.filter(account=obj, is_active=True)
+        return [api_key.key for api_key in api_keys]
+
+

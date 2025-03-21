@@ -1,0 +1,66 @@
+{
+  "order_id": "SW-20250318-001",
+  "customer": {
+    "customer_id": "CUST-1001",
+    "name": "Luke Skywalker",
+    "email": "luke@rebelalliance.com",
+    "phone": "+1234567890",
+    "shipping_address": {
+      "street": "77 Jedi Temple Way",
+      "city": "Coruscant",
+      "sector": "Core Worlds",
+      "postal_code": "SW77",
+      "planet": "Coruscant"
+    },
+    "billing_address": {
+      "street": "77 Jedi Temple Way",
+      "city": "Coruscant",
+      "sector": "Core Worlds",
+      "postal_code": "SW77",
+      "planet": "Coruscant"
+    }
+  },
+  "order_date": "2025-03-18T14:30:00Z",
+  "status": "Processing",
+  "items": [
+    {
+      "item_id": "ITEM-0001",
+      "name": "Lightsaber - Blue",
+      "category": "Weapons",
+      "price": 199.99,
+      "quantity": 1,
+      "total": 199.99
+    },
+    {
+      "item_id": "ITEM-0002",
+      "name": "Millennium Falcon Lego Set",
+      "category": "Toys",
+      "price": 149.99,
+      "quantity": 1,
+      "total": 149.99
+    },
+    {
+      "item_id": "ITEM-0003",
+      "name": "Stormtrooper Helmet",
+      "category": "Collectibles",
+      "price": 129.99,
+      "quantity": 2,
+      "total": 259.98
+    }
+  ],
+  "subtotal": 609.96,
+  "tax": 30.5,
+  "shipping_cost": 15.0,
+  "total_amount": 655.46,
+  "payment": {
+    "method": "Credit Card",
+    "transaction_id": "TXN-20250318-123456",
+    "status": "Paid"
+  },
+  "shipment": {
+    "carrier": "Rebel Express",
+    "tracking_number": "REB-20250318-XYZ123",
+    "estimated_delivery": "2025-03-22"
+  },
+  "notes": "May the Force be with you!"
+}

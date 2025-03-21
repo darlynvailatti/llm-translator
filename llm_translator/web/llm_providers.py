@@ -1,6 +1,6 @@
 import os
 import requests
-
+import logging
 class AbstractLLMProvider:
 
     def __init__(self, config):
@@ -35,3 +35,22 @@ class TogetherAIProvider(AbstractLLMProvider):
         response.raise_for_status()
         json_response = response.json()
         return json_response["choices"][0]["message"]["content"]
+    
+
+class LLMCaller:
+
+    logger = logging.getLogger(f"{__name__}")
+
+    @staticmethod
+    def call(prompt: str) -> str:
+        llm_providers = {
+            # "ollama": OllamaLocalAPIProvider(),
+            "together": TogetherAIProvider()
+        }
+        for p, implementation in llm_providers.items():
+            try:
+                LLMCaller.logger.info(f"Calling `{p}` LLM")
+                return { "content": implementation.call(prompt), "provider": p }
+            except Exception as e:
+                LLMCaller.logger.error(f"Error calling `{p}` LLM: {e}")
+                continue

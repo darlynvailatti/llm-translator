@@ -1,11 +1,14 @@
+import pydantic
 from rest_framework import serializers
 from .models import (
     TranslationEndpoint,
     TranslationSpec,
     TranslationEvent,
-    AccountAPIKey
+    AccountAPIKey,
+    SpecTestCase,
+    TranslationArtifact
 )
-from .schemas import TranslationSpecDefinitionSchema
+from .schemas import TranslationSpecDefinitionSchema, SpecTestCaseDefinitionSchema
 
 
 class TranslationEndpointAnalyticsSerializer(serializers.ModelSerializer):
@@ -81,9 +84,39 @@ class TranslationSpecDetailSerializer(serializers.ModelSerializer):
         if not data.get("uuid"):
             data = data.copy()
             data["definition"] = {}
+
+        return super().to_internal_value(data)
+
+
+class SpecTestCaseDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpecTestCase
+        fields = ["name", "definition"]
+
+    def to_internal_value(self, data):
+        try:
+            definition = data.get("definition")
+            SpecTestCaseDefinitionSchema(**definition).model_validate(definition)
+        except pydantic.ValidationError as e:
+            raise serializers.ValidationError(detail={
+                "definition": e.errors()
+            }, code="invalid")
         
         return super().to_internal_value(data)
-    
+
+
+class SpecTestCaseListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = SpecTestCase
+        fields = ["uuid", "name", "status"]
+
+class TranslationSpecArtifactSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TranslationArtifact
+        fields = ["uuid", "implementation_str"]
+
 class AccountSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=256)
@@ -93,5 +126,3 @@ class AccountSerializer(serializers.Serializer):
     def get_api_keys(self, obj) -> list:
         api_keys = AccountAPIKey.objects.filter(account=obj, is_active=True)
         return [api_key.key for api_key in api_keys]
-
-

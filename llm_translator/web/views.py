@@ -3,21 +3,35 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
-from .models import TranslationEndpoint, Account, TranslationSpec
+from .models import (
+    TranslationEndpoint,
+    Account,
+    TranslationSpec,
+    SpecTestCase,
+    TranslationArtifact,
+)
 from .serializers import (
     TranslationEndpointListSerializer,
     TranslationEndpointDetailSerializer,
     TranslationSpecListSerializer,
     TranslationSpecDetailSerializer,
     AccountSerializer,
+    SpecTestCaseDetailSerializer,
+    SpecTestCaseListSerializer,
+    TranslationSpecArtifactSerializer,
 )
-from .manager import TranslationManager, TranslationRequest
+from .manager import (
+    TranslationManager,
+    TranslationRequest,
+    ArtifactGeneratorManager,
+    ArtifactGenerationRequest
+)
 
 
 @api_view(["POST"])
 def api_translate(request, endpoint_id):
     content_type = request.headers.get("Content-Type")
-    body = request.data
+    body = request.body
 
     translation_request = {
         "endpoint_id": endpoint_id,
@@ -44,15 +58,41 @@ def api_translate(request, endpoint_id):
 
 @api_view(["GET"])
 def get_account_by_endpoint(request, endpoint_id):
-    print(endpoint_id)
     account = TranslationEndpoint.objects.filter(uuid=endpoint_id).first()
-
     if not account:
         return Response(
-            {"error": "No active Account has been found for the given endpoint"}, status=400
+            {"error": "No active Account has been found for the given endpoint"},
+            status=400,
         )
     data = AccountSerializer(account.owner).data
     return Response(data, status=200)
+
+
+@api_view(["POST"])
+def api_generate_spec_artifact(request, spec_id):
+    try:
+        request = ArtifactGenerationRequest(spec_id=spec_id)
+        response = ArtifactGeneratorManager().handle(request)
+
+        if not response.success:
+            return Response({"success": False, "error": response.message}, status=400)
+        elif not response.artifact:
+            return Response(
+                {"success": False, "error": "No artifact has been generated"},
+                status=400,
+            )
+        else:
+            return Response(
+                {
+                    "success": True,
+                    "artifact": TranslationSpecArtifactSerializer(
+                        response.artifact
+                    ).data,
+                },
+                status=201,
+            )
+    except Exception as e:
+        return Response({"success": False, "error": str(e)}, status=400)
 
 
 class TranslationEndpointViewSet(viewsets.ModelViewSet):
@@ -116,3 +156,43 @@ class TranslationSpecViewSet(viewsets.ModelViewSet):
 
         created = TranslationSpec.objects.create(endpoint=endpoint, **request.data)
         return Response(TranslationSpecDetailSerializer(created).data, status=201)
+
+
+class SpecTestCaseViewSet(viewsets.ModelViewSet):
+
+    authentication_classes = [
+        TokenAuthentication,
+    ]
+
+    def get_queryset(self):
+        spec_id = self.kwargs["spec_id"]
+        return SpecTestCase.objects.filter(spec_id=spec_id)
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return SpecTestCaseListSerializer
+        return SpecTestCaseDetailSerializer
+
+    def create(self, request, *args, **kwargs):
+        SpecTestCaseDetailSerializer(data=request.data).is_valid(raise_exception=True)
+        spec = get_object_or_404(TranslationSpec, uuid=self.kwargs["spec_id"])
+
+        created = SpecTestCase.objects.create(spec=spec, **request.data)
+        return Response(SpecTestCaseDetailSerializer(created).data, status=201)
+
+
+class SpecArtifactViewSet(viewsets.ModelViewSet):
+
+    authentication_classes = [
+        TokenAuthentication,
+    ]
+
+    def get_queryset(self):
+        spec_id = self.kwargs["spec_id"]
+        return TranslationArtifact.objects.filter(spec_id=spec_id)
+
+    def get_serializer_class(self):
+        return TranslationSpecArtifactSerializer
+
+    def create(self, request, *args, **kwargs):
+        raise NotImplementedError("Create not supported for this endpoint")

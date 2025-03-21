@@ -1,0 +1,66 @@
+<Order>
+    <OrderID>SW-20250318-001</OrderID>
+    <Customer>
+        <CustomerID>CUST-1001</CustomerID>
+        <Name>Luke Skywalker</Name>
+        <Email>luke@rebelalliance.com</Email>
+        <Phone>+1234567890</Phone>
+        <ShippingAddress>
+            <Street>77 Jedi Temple Way</Street>
+            <City>Coruscant</City>
+            <Sector>Core Worlds</Sector>
+            <PostalCode>SW77</PostalCode>
+            <Planet>Coruscant</Planet>
+        </ShippingAddress>
+        <BillingAddress>
+            <Street>77 Jedi Temple Way</Street>
+            <City>Coruscant</City>
+            <Sector>Core Worlds</Sector>
+            <PostalCode>SW77</PostalCode>
+            <Planet>Coruscant</Planet>
+        </BillingAddress>
+    </Customer>
+    <OrderDate>2025-03-18T14:30:00Z</OrderDate>
+    <Status>Processing</Status>
+    <Items>
+        <Item>
+            <ItemID>ITEM-0001</ItemID>
+            <Name>Lightsaber - Blue</Name>
+            <Category>Weapons</Category>
+            <Price>199.99</Price>
+            <Quantity>1</Quantity>
+            <Total>199.99</Total>
+        </Item>
+        <Item>
+            <ItemID>ITEM-0002</ItemID>
+            <Name>Millennium Falcon Lego Set</Name>
+            <Category>Toys</Category>
+            <Price>149.99</Price>
+            <Quantity>1</Quantity>
+            <Total>149.99</Total>
+        </Item>
+        <Item>
+            <ItemID>ITEM-0003</ItemID>
+            <Name>Stormtrooper Helmet</Name>
+            <Category>Collectibles</Category>
+            <Price>129.99</Price>
+            <Quantity>2</Quantity>
+            <Total>259.98</Total>
+        </Item>
+    </Items>
+    <Subtotal>609.96</Subtotal>
+    <Tax>30.50</Tax>
+    <ShippingCost>15.00</ShippingCost>
+    <TotalAmount>655.46</TotalAmount>
+    <Payment>
+        <Method>Credit Card</Method>
+        <TransactionID>TXN-20250318-123456</TransactionID>
+        <Status>Paid</Status>
+    </Payment>
+    <Shipment>
+        <Carrier>Rebel Express</Carrier>
+        <TrackingNumber>REB-20250318-XYZ123</TrackingNumber>
+        <EstimatedDelivery>2025-03-22</EstimatedDelivery>
+    </Shipment>
+    <Notes>May the Force be with you!</Notes>
+</Order>

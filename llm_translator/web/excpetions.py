@@ -6,3 +6,7 @@ class MultipleActiveSpecs(Exception):
 class TranslationException(Exception):
     def __init__(self, message):
         super().__init__(message)
+
+class ArtifcatGenerationException(Exception):
+    def __init__(self, message):
+        super().__init__(message)

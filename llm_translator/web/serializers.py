@@ -6,9 +6,10 @@ from .models import (
     TranslationEvent,
     AccountAPIKey,
     SpecTestCase,
-    TranslationArtifact
+    TranslationArtifact,
+    SpecTestCaseExecution
 )
-from .schemas import TranslationSpecDefinitionSchema, SpecTestCaseDefinitionSchema
+from .schemas import SpecTestCaseDefinitionSchema
 
 
 class TranslationEndpointAnalyticsSerializer(serializers.ModelSerializer):
@@ -89,9 +90,11 @@ class TranslationSpecDetailSerializer(serializers.ModelSerializer):
 
 
 class SpecTestCaseDetailSerializer(serializers.ModelSerializer):
+
+    last_execution = serializers.SerializerMethodField()
     class Meta:
         model = SpecTestCase
-        fields = ["name", "definition"]
+        fields = ["name", "definition", "last_execution", "status"]
 
     def to_internal_value(self, data):
         try:
@@ -103,6 +106,16 @@ class SpecTestCaseDetailSerializer(serializers.ModelSerializer):
             }, code="invalid")
         
         return super().to_internal_value(data)
+    
+    def get_last_execution(self, obj) -> dict:
+        last_exec = SpecTestCaseExecution.objects.filter(test_case=obj).order_by("-created_at").first()
+        if not last_exec:
+            return None
+        return {
+            "executed_at": last_exec.executed_at.isoformat(),
+            "status": last_exec.status,
+            "result": last_exec.result
+        }
 
 
 class SpecTestCaseListSerializer(serializers.ModelSerializer):
@@ -115,7 +128,7 @@ class TranslationSpecArtifactSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TranslationArtifact
-        fields = ["uuid", "implementation_str"]
+        fields = ["uuid", "implementation_str", "created_at", "updated_at"]
 
 class AccountSerializer(serializers.Serializer):
 
@@ -126,3 +139,12 @@ class AccountSerializer(serializers.Serializer):
     def get_api_keys(self, obj) -> list:
         api_keys = AccountAPIKey.objects.filter(account=obj, is_active=True)
         return [api_key.key for api_key in api_keys]
+
+class ArtifactGenerationSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    it_generated_artifact = serializers.BooleanField()
+    it_passed_all_tests = serializers.BooleanField()
+    message = serializers.CharField()
+    stacktrace = serializers.CharField(allow_blank=True, required=False)
+    failed_test_cases = SpecTestCaseListSerializer(many=True)
+    artifact = TranslationSpecArtifactSerializer()

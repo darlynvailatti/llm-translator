@@ -84,6 +84,17 @@ class SpecTestCase(BaseModel):
         default=TranslationTestCaseStatus.NOT_EXECUTED
     )
 
+class SpecTestCaseExecution(BaseModel):
+    test_case = models.ForeignKey(SpecTestCase, on_delete=models.CASCADE)
+    executed_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=128, choices=[
+        (TranslationTestCaseStatus.SUCCESS, TranslationTestCaseStatus.SUCCESS), 
+        (TranslationTestCaseStatus.FAILURE, TranslationEventStatus.FAILURE),
+        (TranslationTestCaseStatus.NOT_EXECUTED, TranslationTestCaseStatus.NOT_EXECUTED)],
+        default=TranslationTestCaseStatus.NOT_EXECUTED
+    )
+    result = JSONField()
+
 
 
 class TranslationEvent(BaseModel):

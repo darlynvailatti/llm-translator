@@ -1,20 +1,27 @@
+import traceback
+import uuid
 from typing import Optional
 import logging
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
-from .constants import TranslationTestCaseStatus
+from .constants import TranslationTestCaseStatus, EngineOptions
 from .models import (
     TranslationEndpoint,
     TranslationEvent,
     TranslationEventStatus,
     TranslationArtifact,
     TranslationSpec,
-    SpecTestCase
+    SpecTestCase,
+    SpecTestCaseExecution,
 )
-from .translator import TranslatorService, TranslationContext, CompiledArtifactTranslatorExecutor
+from .translator import (
+    TranslatorService,
+    TranslationContext,
+    CompiledArtifactTranslatorExecutor,
+)
 from .artifact import TranslationArtifactGenerator
 from .schemas import SpecTestCaseDefinitionSchema, TranslationSpecDefinitionSchema
+from .excpetions import ArtifcatGenerationException
 
 
 @dataclass
@@ -131,8 +138,12 @@ class ArtifactGenerationRequest:
 @dataclass
 class ArtifactGenerationResponse:
     success: bool
-    message: Optional[str]
-    artifact: Optional[TranslationArtifact]
+    it_generated_artifact: bool
+    it_passed_all_test_cases: bool
+    failed_test_cases: Optional[list[SpecTestCase]] = None
+    message: Optional[str] = None
+    stacktrace: Optional[str] = None
+    artifact: Optional[TranslationArtifact] = None
 
 
 class ArtifactGeneratorManager:
@@ -142,52 +153,179 @@ class ArtifactGeneratorManager:
     def handle(self, request: ArtifactGenerationRequest) -> ArtifactGenerationResponse:
         try:
             spec = TranslationSpec.objects.get(uuid=request.spec_id)
-            spec_def = TranslationSpecDefinitionSchema(**spec.definition)
             spec_test_cases = SpecTestCase.objects.filter(spec=spec)
-
             artifact = TranslationArtifact.objects.filter(spec=spec).first()
-            latest_test_case = spec_test_cases.latest("updated_at")
 
-            self.logger.info(f"Latest test case updated at: {latest_test_case.updated_at}")
-            self.logger.info(f"Artifact updated at: {artifact.updated_at if artifact else None}")
+            try:
+                latest_test_case = spec_test_cases.latest("updated_at")
+            except SpecTestCase.DoesNotExist:
+                raise ArtifcatGenerationException(
+                    "At least one test case must be created!"
+                )
 
-            artifact_is_outdated = (artifact and latest_test_case.updated_at > artifact.updated_at)
+            self.logger.info(
+                f"Latest test case updated at: {latest_test_case.updated_at}"
+            )
+            self.logger.info(
+                f"Artifact updated at: {artifact.updated_at if artifact else None}"
+            )
 
-            if not artifact or artifact_is_outdated:
-                self.logger.info("No artificat found or outdated, generating new artifact")
-                artifact = TranslationArtifactGenerator(spec).generate()
+            artifact_is_outdated = (
+                artifact and latest_test_case.updated_at > artifact.updated_at
+            )
+
+            try:
+                if not artifact or artifact_is_outdated:
+                    self.logger.info(
+                        "No artificat found or outdated, generating new artifact"
+                    )
+                    artifact = TranslationArtifactGenerator(spec).generate()
+            except Exception as e:
+                raise ArtifcatGenerationException(f"Error generating artifact: {e}")
 
             if not artifact:
-                raise Exception(f"No artifact found for spec {spec.name}")
-
-            # Run test cases for the generated artifact
-            for tc in spec_test_cases:
-
-                self.logger.info(f"Running test case `{tc.name}`")
-                tc_definition = SpecTestCaseDefinitionSchema(**tc.definition)
-                context = TranslationContext(
-                    endpoint=spec.endpoint,
-                    content_type=spec_def.input_rule.content_type,
-                    body=tc_definition.input.body
+                raise ArtifcatGenerationException(
+                    f"No artifact found for spec {spec.name}"
                 )
-                translated = CompiledArtifactTranslatorExecutor(
-                    context, spec
-                ).run()
+            
+            exec_response = SpecTestCaseExecutor(spec).run_all()
+            executions = exec_response.executions
+            failed_test_cases = [
+                exec.test_case
+                for exec in executions
+                if exec.status == TranslationTestCaseStatus.FAILURE
+            ]
+            it_passed_all_test_cases = exec_response.success
 
-                # Is translated body equals to test case's expected?
-                if translated.body == tc_definition.expectation.body:
-                    tc.status = TranslationTestCaseStatus.SUCCESS
-                else:
-                    tc.status = TranslationTestCaseStatus.FAILURE
-
-                self.logger.info(f"Test case `{tc.name}` status: {tc.status}")
-
-                tc.executed_at = datetime.now()
-                tc.save()
-
-            return ArtifactGenerationResponse(success=True, message=None, artifact=artifact)
+            return ArtifactGenerationResponse(
+                success=True,
+                it_generated_artifact=artifact is not None,
+                it_passed_all_test_cases=it_passed_all_test_cases,
+                failed_test_cases=failed_test_cases,
+                message=None,
+                artifact=artifact,
+            )
+        except ArtifcatGenerationException as e:
+            stacktrace = traceback.format_exc()
+            msg = f"Error generating artifact: {e}"
+            self.logger.error(msg, exc_info=True)
+            return ArtifactGenerationResponse(
+                success=False,
+                it_generated_artifact=False,
+                it_passed_all_test_cases=False,
+                message=msg,
+                stacktrace=stacktrace,
+                artifact=None,
+            )
         except Exception as e:
-            self.logger.error(f"Error generating artifact: {e}")
-            return ArtifactGenerationResponse(success=False, message=str(e), artifact=None)
+            stacktrace = traceback.format_exc()
+            msg = f"Error generating artifact: {e}"
+            self.logger.error(msg, exc_info=True)
+            return ArtifactGenerationResponse(
+                success=False,
+                it_generated_artifact=False,
+                it_passed_all_test_cases=False,
+                message=msg,
+                stacktrace=stacktrace,
+                artifact=None,
+            )
+
+
+@dataclass
+class SpecTestCaseExecutionResponse:
+    success: bool
+    executions: list[SpecTestCaseExecution]
+
+
+class SpecTestCaseExecutor:
+
+    logger = logging.getLogger(f"llm_translator.{__name__}")
+
+    def __init__(self, spec: TranslationSpec):
+        self.spec = spec
+        self.spec_def = TranslationSpecDefinitionSchema(**spec.definition)
+
+        if self.spec_def.engine != EngineOptions.COMPILED_ARTIFACT:
+            raise ValueError(
+                "SpecTestCaseExecutor only supported for specs with compiled artifacts"
+            )
+
+    def run_all(self) -> SpecTestCaseExecutionResponse:
+        self.test_cases = SpecTestCase.objects.filter(spec=self.spec)
+        is_success = True
+        executions = []
+        for tc in self.test_cases:
+            execution = self.__run_test_case(tc)
+            if execution.status != TranslationTestCaseStatus.SUCCESS:
+                is_success = False
+            executions.append(execution)
+
+        return SpecTestCaseExecutionResponse(
+            success=is_success,
+            executions=executions,
+        )
+
+    def run(self, test_case: SpecTestCase) -> SpecTestCaseExecutionResponse:
+        execution = self.__run_test_case(test_case)
+        return SpecTestCaseExecutionResponse(
+            success=execution.status == TranslationTestCaseStatus.SUCCESS,
+            executions=[test_case],
+        )
+
+    def __run_test_case(self, test_case: SpecTestCase) -> SpecTestCaseExecution:
+        test_spec_def = SpecTestCaseDefinitionSchema(**test_case.definition)
+        execution = SpecTestCaseExecution(
+            test_case=test_case, executed_at=datetime.now().isoformat()
+        )
+        try:
+            self.logger.info(f"Running test case `{test_case.name}`")
+            tc_definition = SpecTestCaseDefinitionSchema(**test_case.definition)
+            context = TranslationContext(
+                endpoint=self.spec.endpoint,
+                content_type=self.spec_def.input_rule.content_type,
+                body=tc_definition.input.body.encode(),
+            )
+            translated = CompiledArtifactTranslatorExecutor(context, self.spec).run()
+
+            # Is translated body equals to test case's expected?
+            status = TranslationTestCaseStatus.SUCCESS
+            message = "Success"
+            if translated.body != tc_definition.expectation.body:
+                status = TranslationTestCaseStatus.FAILURE
+                message = "Translated payload is different from expected"
+
+            self.logger.info(f"Test case `{test_case.name}` ran, status is: {status}")
+            execution.status = status
+            execution.result = {
+                "message": message,
+                "translated": {
+                    "content_type": translated.content_type,
+                    "body": translated.body.decode(),
+                },
+                "expectation": {
+                    "body": tc_definition.expectation.body,
+                },
+            }
+        except Exception as e:
+            stacktrace = traceback.format_exc()
+            msg = f"Unkown error: {e}\n{stacktrace}"
+            self.logger.error(f"Error running test case `{test_case.name}`: {msg}")
+            execution.status = TranslationTestCaseStatus.FAILURE
+            execution.result = {
+                "message": msg,
+            }
+        finally:
+
+            # If the test case is expected to fail, it should be considered a success
+            if test_spec_def.expectation.result != execution.status:
+                msg = f"Test case is expected for `{test_spec_def.expectation.result}` but resulted in `{execution.status}`"
+                self.logger.info(msg)
+                execution.status = TranslationTestCaseStatus.FAILURE
+                execution.result = {
+                    **execution.result,
+                    "message": f"{msg}. Original message was: {execution.result['message']}",
+                }
+
+            execution.save()
         
-        
+        return execution

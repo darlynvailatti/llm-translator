@@ -1,3 +1,5 @@
+import traceback
+import logging
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
@@ -19,13 +21,17 @@ from .serializers import (
     SpecTestCaseDetailSerializer,
     SpecTestCaseListSerializer,
     TranslationSpecArtifactSerializer,
+    ArtifactGenerationSerializer,
 )
 from .manager import (
     TranslationManager,
     TranslationRequest,
     ArtifactGeneratorManager,
-    ArtifactGenerationRequest
+    ArtifactGenerationRequest,
+    SpecTestCaseExecutor
 )
+
+logger = logging.getLogger(f"{__name__}")
 
 
 @api_view(["POST"])
@@ -74,26 +80,49 @@ def api_generate_spec_artifact(request, spec_id):
         request = ArtifactGenerationRequest(spec_id=spec_id)
         response = ArtifactGeneratorManager().handle(request)
 
+        generation_response = {
+            "success": response.success,
+            "it_generated_artifact": response.it_generated_artifact,
+            "it_passed_all_tests": response.it_passed_all_test_cases,
+            "message": response.message,
+            "stacktrace": response.stacktrace,
+            "failed_test_cases": SpecTestCaseListSerializer(
+                response.failed_test_cases, many=True
+            ).data,
+            "artifact": TranslationSpecArtifactSerializer(response.artifact).data,
+        }
+
+        logger.info(
+            f"Artifact generation response: {generation_response} for spec_id: {spec_id}"
+        )
+
+        serialized_response = ArtifactGenerationSerializer(
+            generation_response
+        ).data
+
         if not response.success:
-            return Response({"success": False, "error": response.message}, status=400)
-        elif not response.artifact:
-            return Response(
-                {"success": False, "error": "No artifact has been generated"},
-                status=400,
-            )
+            return Response(serialized_response, status=400)
         else:
             return Response(
-                {
-                    "success": True,
-                    "artifact": TranslationSpecArtifactSerializer(
-                        response.artifact
-                    ).data,
-                },
+                serialized_response,
                 status=201,
             )
     except Exception as e:
-        return Response({"success": False, "error": str(e)}, status=400)
+        logger.error(traceback.format_exc())
+        return Response({"success": False, "error": str(e)}, status=500)
 
+
+@api_view(["POST"])
+def api_run_spec_test_cases(request, spec_id):
+    try:
+        spec = TranslationSpec.objects.filter(uuid=spec_id).first()
+        response = SpecTestCaseExecutor(spec).run_all()
+        return Response({
+            "success": response.success,
+        }, status=200)
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return Response({"success": False, "error": str(e)}, status=500)
 
 class TranslationEndpointViewSet(viewsets.ModelViewSet):
 

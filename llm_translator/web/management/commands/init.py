@@ -3,7 +3,7 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from web.schemas import TranslationSpecDefinitionSchema, SpecTestCaseDefinitionSchema
-from web.constants import EngineOptions
+from web.constants import EngineOptions, ExpectationResult
 
 
 class Command(BaseCommand):
@@ -86,7 +86,7 @@ class Command(BaseCommand):
                     "expectation": {
                         "body": open(f"{samples_path}/001/expected.xml").read(),
                         "content_type": "xml",
-                        "result": "success",
+                        "result": ExpectationResult.SUCESS,
                     },
                 }
             ).model_dump(),

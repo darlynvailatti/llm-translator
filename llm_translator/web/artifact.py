@@ -1,4 +1,5 @@
 import re
+import logging
 from .models import TranslationSpec, TranslationArtifact, SpecTestCase
 from .excpetions import ArtifcatGenerationException
 from .schemas import TranslationSpecDefinitionSchema, SpecTestCaseDefinitionSchema
@@ -15,6 +16,8 @@ class AbstractArtifactGenerator:
 
 class TranslationArtifactGenerator(AbstractArtifactGenerator):
 
+    logger = logging.getLogger(f"llm_translator.{__name__}")
+
     def generate(self) -> TranslationArtifact:
 
         try:
@@ -27,6 +30,8 @@ class TranslationArtifactGenerator(AbstractArtifactGenerator):
                 **self.spec.definition
             )
             self.prompt = self.__get_prompt()
+
+            self.logger.info(f"Prompt: {self.prompt}")
 
             llm_response = LLMCaller.call(self.prompt)
 
@@ -72,8 +77,10 @@ class TranslationArtifactGenerator(AbstractArtifactGenerator):
 
             #### Requirements
             - Return **only** plain Python code, without markdown syntax, syntax highlighting, explanations or tripple brackets.
-            - **Library Constraints:** You **must use only Python’s built-in libraries** and import them inside "translate" function. 
+            - **Library Constraints:** You **must use only Python’s built-in or allowed libraries** and import them inside "translate" function. 
                 External libraries, services, resources, tools, or frameworks are strictly prohibited.
+            - **Allowed Libraries:** You are allowed to use the following libraries:
+                •	pyyaml
             - **Code Template:** Your implementation **must** follow the structure below:
 
             def translate(context) -> bytes:
@@ -83,7 +90,10 @@ class TranslationArtifactGenerator(AbstractArtifactGenerator):
                 :param context: dict containing the key "data" with the input bytes.
                 :return: Converted data as bytes.
                 \"\"\"
-                # Your implementation here
+
+                # >>>>>> Import necessary libraries here
+
+                # >>>>>> Your implementation here
                 pass
 
             Context Parameter

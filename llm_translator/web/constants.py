@@ -5,8 +5,8 @@ class EngineOptions(str, Enum):
     COMPILED_ARTIFACT = "compiled_artifact"
 
 class ExpectationResult(str, Enum):
-    SUCESS = "success"
-    FAILURE = "failure"
+    SUCESS = "SUCCESS"
+    FAILURE = "FAILURE"
 
 class TranslationEventStatus(str, Enum):
     SUCCESS = "SUCCESS"

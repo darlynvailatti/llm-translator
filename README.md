@@ -1,3 +1,5 @@
+# Project Documentation
+
 # Build & Run
 ```sh
 ./bin/setup.sh

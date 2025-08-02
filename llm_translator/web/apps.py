@@ -5,4 +5,6 @@ class WebConfig(AppConfig):
     name = 'web'
 
     def ready(self):
+        from .llm.llm_providers import configure_dspy_lm
+        configure_dspy_lm()
         import web.signals

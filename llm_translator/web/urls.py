@@ -6,6 +6,7 @@ from .views import (
     api_generate_spec_artifact,
     get_account_by_endpoint,
     api_run_spec_test_cases,
+    api_activate_spec,
     TranslationEndpointViewSet,
     TranslationSpecViewSet,
     SpecTestCaseViewSet,
@@ -60,6 +61,14 @@ urlpatterns = [
         api_run_spec_test_cases,
         name="api_run_testcases",
     ),
+
+    path(
+        f"{API_BASE_URL}/specs/<str:spec_id>/activate",
+        api_activate_spec,
+        name="api_activate_spec",
+    ),
+
+
 
     # UI API
     path(f"{API_BASE_URL}/token", obtain_auth_token, name="api_token"),

@@ -14,12 +14,10 @@ from .models import (
     SpecTestCase,
     SpecTestCaseExecution,
 )
-from .translator import (
-    TranslatorService,
-    TranslationContext,
-    CompiledArtifactTranslatorExecutor,
-)
-from .artifact import TranslationArtifactGenerator
+from .translator.service import TranslatorService
+from .translator.models import TranslationContext
+from .translator.executors import CompiledArtifactTranslatorExecutor
+from .translator.artifact import TranslationArtifactGenerator
 from .schemas import SpecTestCaseDefinitionSchema, TranslationSpecDefinitionSchema
 from .excpetions import ArtifcatGenerationException
 
@@ -290,7 +288,10 @@ class SpecTestCaseExecutor:
             # Is translated body equals to test case's expected?
             status = TranslationTestCaseStatus.SUCCESS
             message = "Success"
-            if translated.body != tc_definition.expectation.body:
+            # Compare content by converting both to strings
+            translated_body_str = translated.body.decode()
+            if translated_body_str != tc_definition.expectation.body:
+                self.logger.error(f"Translated payload is different from expected")
                 status = TranslationTestCaseStatus.FAILURE
                 message = "Translated payload is different from expected"
 

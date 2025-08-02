@@ -11,6 +11,7 @@ from .models import (
     TranslationSpec,
     SpecTestCase,
     TranslationArtifact,
+    TranslationEvent,
 )
 from .serializers import (
     TranslationEndpointListSerializer,
@@ -123,6 +124,28 @@ def api_run_spec_test_cases(request, spec_id):
     except Exception as e:
         logger.error(traceback.format_exc())
         return Response({"success": False, "error": str(e)}, status=500)
+
+
+@api_view(["POST"])
+def api_activate_spec(request, spec_id):
+    try:
+        spec = TranslationSpec.objects.filter(uuid=spec_id).first()
+        if not spec:
+            return Response({"success": False, "error": "Spec not found"}, status=404)
+        # Deactivate all other specs for the same endpoint
+        TranslationSpec.objects.filter(endpoint=spec.endpoint).update(is_active=False)
+        # Activate the selected spec
+        spec.is_active = True
+        spec.save()
+        return Response({
+            "success": True,
+            "message": f"Spec '{spec.name}' activated.",
+            "spec": TranslationSpecDetailSerializer(spec).data,
+        }, status=200)
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return Response({"success": False, "error": str(e)}, status=500)
+
 
 class TranslationEndpointViewSet(viewsets.ModelViewSet):
 

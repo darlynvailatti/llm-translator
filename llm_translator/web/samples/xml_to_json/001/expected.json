@@ -1,0 +1,36 @@
+{
+  "order": {
+    "@id": "12345",
+    "@status": "pending",
+    "customer": {
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "address": {
+        "street": "123 Main St",
+        "city": "Anytown",
+        "state": "CA",
+        "zipCode": "90210"
+      }
+    },
+    "items": {
+      "item": [
+        {
+          "@id": "item1",
+          "@quantity": "2",
+          "@price": "29.99",
+          "name": "Widget A",
+          "description": "High-quality widget"
+        },
+        {
+          "@id": "item2",
+          "@quantity": "1",
+          "@price": "49.99",
+          "name": "Widget B",
+          "description": "Premium widget"
+        }
+      ]
+    },
+    "total": "109.97",
+    "orderDate": "2024-01-15"
+  }
+} 

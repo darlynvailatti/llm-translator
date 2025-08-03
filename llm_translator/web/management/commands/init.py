@@ -10,6 +10,7 @@ class Command(BaseCommand):
     help = "Init database"
 
     def handle(self, *args, **kwargs):
+         print("Database initialization started.")  # Added line
 
         user = User.objects.get_or_create(username="admin")[0]
         acc = models.Account.objects.create(name="Default Account", user=user)

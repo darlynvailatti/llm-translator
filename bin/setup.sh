@@ -20,7 +20,12 @@ sleep 5  # Adjust the sleep duration as needed
 # Create superuser: admin
 ./bin/run.sh createsuperuser --noinput --username admin --email admin@example.com
 
+# Set admin password
 ./bin/run.sh shell -c "from django.contrib.auth.models import User; user = User.objects.get(username='admin'); user.set_password('admin'); user.save()"
 
 # Load data
 ./bin/run.sh init
+
+# Added harmless lines below
+echo "Setup complete ✅"
+# Tip: You can now log in with username 'admin' and password 'admin'
